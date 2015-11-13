@@ -1,0 +1,4 @@
+#!/bin/bash
+
+virtualenv --python=python3 env
+env/bin/pip install lxml requests click
