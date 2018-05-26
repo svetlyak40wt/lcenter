@@ -1,0 +1,60 @@
+#!/bin/sh
+#|-*- mode:lisp -*-|#
+#|
+exec ros -Q -- $0 "$@"
+|#
+(progn ;;init forms
+  (ros:ensure-asdf)
+  (ql:quickload '(:dexador
+                  :f-underscore
+                  :defmain
+                  :anaphora
+                  :clss
+                  :plump)
+                :silent t))
+
+(defpackage :ros.script.monitor
+  (:use #:cl
+        #:f-underscore
+        #:defmain)
+  (:import-from #:anaphora
+                #:it
+                #:awhen))
+(in-package :ros.script.monitor)
+
+
+(defun select (selector node)
+  "Этот метод просто обертка над clss:select, но возвращает список, для удобства работы."
+  (loop for item across (clss:select selector node)
+        collect item))
+
+
+(defun select-text (selector page-or-node)
+  "Возвращает текст элемента по заданному селектору или nil"
+  (awhen (first (select selector page-or-node))
+    (plump:text it)))
+
+
+(defun print-dates (url)
+  (let* ((body (dex:get url))
+         (doc (plump:parse body))
+         (name (select-text "#page-title" doc))
+         (cells (select "#doctors-timetable ul li" doc))
+         (free-cells (remove-if (f_ (equal (plump:attribute _ "class")
+                                           "busy-date"))
+                                cells)))
+    (format t "~A~%" name)
+    
+    (if free-cells
+        (loop for cell in free-cells
+              do (format t "  ~A~%"
+                         (plump:text cell)))
+        (format t "  нет свободного времени~%"))
+    
+    (values)))
+
+
+(defmain main (&rest urls)
+    "Выводит свободное на сегодня время для одного или нескольких врачей lcenter.ru."
+    (loop for url in urls
+          do (print-dates url)))

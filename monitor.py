@@ -6,8 +6,7 @@ import click
 from lxml.html import fromstring
 
 def process_doctor(url):
-    headers = {'Cookie': 'beget=begetok'}
-    response = requests.get(url, headers=headers)
+    response = requests.get(url)
 
     data = fromstring(response.text)
 
